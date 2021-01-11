@@ -1,0 +1,4 @@
+include README.md
+recursive-include octoprint_react_playground/templates *
+recursive-include octoprint_react_playground/translations *
+recursive-include octoprint_react_playground/static *

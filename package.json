@@ -1,0 +1,42 @@
+{
+  "name": "octoprint-react-playground",
+  "version": "0.1.0",
+  "description": "OctoPrint React component testing",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "compile": "npx babel octoprint_react_playground/static/jssrc --out-dir octoprint_react_playground/static/jsout --presets react-app/prod",
+    "compile-watch": "npx babel --watch octoprint_react_playground/static/jssrc --out-dir octoprint_react_playground/static/jsout --presets react-app/prod",
+    "build-dev": "cross-env NODE_ENV=development webpack",
+    "build-prod": "cross-env NODE_ENV=production webpack"
+  },
+  "keywords": [],
+  "author": "Charlie Powell",
+  "license": "MIT",
+  "dependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-react-app": "^3.1.2",
+    "nanoid": "^3.1.20"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "@babel/preset-react": "^7.12.10",
+    "babel-loader": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "webpack": "^5.12.3",
+    "webpack-cli": "^4.3.1"
+  }
+}
