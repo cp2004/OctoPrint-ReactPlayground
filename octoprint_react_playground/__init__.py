@@ -4,7 +4,8 @@ from __future__ import absolute_import
 import octoprint.plugin
 
 class React_playgroundPlugin(octoprint.plugin.AssetPlugin,
-                             octoprint.plugin.TemplatePlugin):
+                             octoprint.plugin.TemplatePlugin,
+							 octoprint.plugin.SettingsPlugin):
 
 	def get_template_configs(self):
 		return [
@@ -18,18 +19,30 @@ class React_playgroundPlugin(octoprint.plugin.AssetPlugin,
 	##~~ AssetPlugin mixin
 
 	def get_assets(self):
-		# Define your plugin's asset files to automatically include in the
-		# core UI here.
-		return dict(
-			js=[
-				"jslib/react.development.js",
-				"jslib/react-dom.development.js",
-				"jsout/react_playground.js",
-			],
-			css=[
+		if self._settings.get_boolean(['development']):
+			react_assets = [
+				'jslib/react.development.js',
+				'jslib/react-dom.development.js',
+			]
+		else:
+			react_assets = [
+				'jslib/react.production.min.js',
+				'jslib/react-dom.production.min.js'
+			]
+		js_assets = ['jsout/react_playground.js']
+		js_assets.extend(react_assets)
+		return {
+			'js': js_assets,
+			'css': [
 				"css/react_playground.css",
 			]
-		)
+		}
+
+	## Plugin settings
+	def get_settings_defaults(self):
+		return {
+			'development': True,
+		}
 
 	##~~ Softwareupdate hook
 
