@@ -9,6 +9,7 @@ import { nanoid } from 'nanoid/non-secure';
 const React = window.React;
 const ReactDOM = window.ReactDOM;
 const OctoPrint = window.OctoPrint;
+const $ = window.$; // I really wanted to avoid jquery, but this is needed for the tab listener since it is not mine.
 
 function LinkBtn (props){
     return (
@@ -50,18 +51,42 @@ class LogLine extends React.Component {
 class TerminalLog extends React.Component {
     constructor(props) {
         super(props);
+        this.state = {
+            visible: true,
+        }
         this.terminalElement = React.createRef();
     }
 
+    componentDidMount() {
+        // Register a callback for tab change - could be easily done outside jquery if the whole UI was React.
+        var self = this;  // TODO is this the best way of callbacks having access to the component?
+        const tabs = $("#tabs").find('a[data-toggle="tab"]');
+        tabs.on("show", function (e) {
+            let current = e.target.hash;
+            if (current === '#tab_plugin_react_playground'){
+                // For some reason there is a massive lag between this setState call and the component re-rendering
+                // TODO Look into this, or don't suspend rendering when tab component is not visible.
+                self.setState({visible: true});
+            } else {
+                self.setState({visible: false});
+            }
+        });
+    }
+
     componentDidUpdate(){
+        // Autoscroll to the bottom of the element
         if (this.props.autoscroll){
             this.terminalElement.current.scrollTop = this.terminalElement.current.scrollHeight;
         }
     }
 
+    shouldComponentUpdate() {
+        // Suspend rendering when tab is visible
+        return this.state.visible || OctoPrint.coreui.selectedTab === '#tab_plugin_react_playground';
+    }
+
     render() {
-        const logLines = this.props.logLines;
-        const logItems = logLines.map((line) =>
+        const logItems = this.props.logLines.map((line) =>
             <LogLine key={line.id} value={line} />
         )
         return (
@@ -98,14 +123,15 @@ class TerminalInput extends React.Component {
     }
 
     handleKeyUp(event) {
+        // Enter to send
         if (event.keyCode === 13) {
             this.sendCommand();
         }
     }
 
     handleKeyDown (event) {
+        // Cycle through command history using up/down arrows
         let keyCode = event.keyCode;
-        // This is where we will handle history (up/down arrows)
         if (keyCode === 38 || keyCode === 40) {
             if (
                 keyCode === 38 &&
@@ -143,6 +169,8 @@ class TerminalInput extends React.Component {
     }
 
     sendCommand () {
+        // Send a command to the printer
+        // This method is way more complicated than it needs to be, copied from core OctoPrint
         let command = this.state.command;
         if (!command){return;}
 
@@ -211,10 +239,9 @@ class TerminalTab extends React.Component {
     }
 
     handleScrollEvent (event){
+        // Work out if user has scrolled up, and if yes stop autoscroll
         let pos = event.nativeEvent.target.scrollTop;
         let top = event.nativeEvent.target.scrollHeight;
-        console.log("pos " + pos)
-        console.log("top " + top)
         if (top - pos > 360) {  // TODO this is a temporary hack to work out if the scroll has moved from the bottom
             this.setState({autoscroll: false})
         }
@@ -225,6 +252,7 @@ class TerminalTab extends React.Component {
     }
 
     componentDidMount (){
+        // Register socket handlers here, should probably be outside in individual functions
         var self = this;
         OctoPrint.socket.onMessage("current", (msg) => {
             let logs = msg.data.logs;
