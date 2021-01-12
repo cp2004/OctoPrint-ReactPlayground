@@ -7,8 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "compile": "npx babel octoprint_react_playground/static/jssrc --out-dir octoprint_react_playground/static/jsout --presets react-app/prod",
     "compile-watch": "npx babel --watch octoprint_react_playground/static/jssrc --out-dir octoprint_react_playground/static/jsout --presets react-app/prod",
-    "build-dev": "cross-env NODE_ENV=development webpack",
-    "build-prod": "cross-env NODE_ENV=production webpack"
+    "build-dev": "cross-env NODE_ENV=development webpack --mode=development",
+    "build-prod": "cross-env NODE_ENV=production webpack --mode=production"
   },
   "keywords": [],
   "author": "Charlie Powell",
