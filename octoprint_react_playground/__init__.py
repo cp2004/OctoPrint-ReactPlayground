@@ -19,20 +19,8 @@ class React_playgroundPlugin(octoprint.plugin.AssetPlugin,
 	##~~ AssetPlugin mixin
 
 	def get_assets(self):
-		if self._settings.get_boolean(['development']):
-			react_assets = [
-				'jslib/react.development.js',
-				'jslib/react-dom.development.js',
-			]
-		else:
-			react_assets = [
-				'jslib/react.production.min.js',
-				'jslib/react-dom.production.min.js'
-			]
-		js_assets = ['jsout/react_playground.js']
-		js_assets.extend(react_assets)
 		return {
-			'js': js_assets,
+			'js': ['jsout/react_playground.js'],
 			'css': [
 				"css/react_playground.css",
 			]

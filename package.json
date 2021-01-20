@@ -14,9 +14,12 @@
   "author": "Charlie Powell",
   "license": "MIT",
   "dependencies": {
+    "@material-ui/core": "^4.11.2",
     "babel-cli": "^6.26.0",
     "babel-preset-react-app": "^3.1.2",
-    "nanoid": "^3.1.20"
+    "nanoid": "^3.1.20",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1"
   },
   "browserslist": {
     "production": [

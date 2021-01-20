@@ -6,8 +6,8 @@
 
 import { nanoid } from 'nanoid/non-secure';
 
-const React = window.React;
-const ReactDOM = window.ReactDOM;
+import React from 'react';
+import ReactDOM from 'react-dom';
 const OctoPrint = window.OctoPrint;
 const $ = window.$; // I really wanted to avoid jquery, but this is needed for the tab listener since it is not mine.
 
@@ -29,7 +29,9 @@ function Button (props){
 
 function Span (props){
     return (
-        <span className={props.className}>{props.text}</span>
+        <span className={props.className}>
+            {props.text}
+        </span>
     )
 }
 
@@ -218,13 +220,47 @@ class TerminalInput extends React.Component {
                     onChange={this.handleChange}
                     onKeyDown={this.handleKeyDown}
                     onKeyUp={this.handleKeyUp}
-                    autoComplete="off"/>
+                    autoComplete="off"
+                    disabled={!this.props.printerState.isOperational}
+                />
                 <LinkBtn className={"add-on"} onClick={this.sendCommand} text={"Send"} />
             </div>
         )
     }
 }
 
+class TerminalStatus extends React.Component {
+    constructor(props){
+        super(props);
+    }
+
+
+    render(){
+        return (
+            <React.Fragment>
+                <small className={"pull-left"}>
+                    <Button
+                        className={'btn-mini ' + (this.props.autoscroll ? 'active' : '')}
+                        onClick={this.props.onToggleAutoScroll}
+                        text={this.props.autoscroll ? 'Autoscrolling' : 'Autoscroll'}
+                    />
+                    <Span text={" showing " + this.props.logLinesLength + " lines"}/>
+                </small>
+                <small className={"pull-right"}>
+                    <a onClick={this.props.copyAll}>
+                        <i className="fas fa-copy" title="Copy all"/>
+                        Copy All
+                    </a>
+                    <br/>
+                    <a onClick={this.props.clearAll}>
+                        <i className="fas fa-trash-alt" title="Clear all"/>
+                        Clear All
+                    </a>
+                </small>
+            </React.Fragment>
+        )
+    }
+}
 
 class TerminalTab extends React.Component {
     constructor(props) {
@@ -232,10 +268,22 @@ class TerminalTab extends React.Component {
         this.state = {
             autoscroll: true,
             logLines: [],
-            scrollPos: undefined,
+            printerState:{
+                isErrorOrClosed: undefined,
+                isOperational: undefined,
+                isPrinting: undefined,
+                isPaused: undefined,
+                isError: undefined,
+                isReady: undefined,
+                isLoading: undefined,
+            }
         }
         this.toggleAutoScroll = this.toggleAutoScroll.bind(this);
         this.handleScrollEvent = this.handleScrollEvent.bind(this);
+        this.processLogs = this.processLogs.bind(this);
+        this.processStateData = this.processStateData.bind(this);
+        this.clearAll = this.clearAll.bind(this);
+        this.copyAll = this.copyAll.bind(this);
     }
 
     handleScrollEvent (event){
@@ -251,17 +299,51 @@ class TerminalTab extends React.Component {
         this.setState((state) => ({autoscroll: !state.autoscroll}));
     }
 
+    copyAll (){
+        let lines = _.map(this.state.logLines, "line")
+        copyToClipboard(lines.join("\n"));
+    }
+
+    clearAll (){
+        this.setState({logLines: []})
+    }
+
     componentDidMount (){
-        // Register socket handlers here, should probably be outside in individual functions
+        // Register socket handlers here, after component is ready
         var self = this;
         OctoPrint.socket.onMessage("current", (msg) => {
-            let logs = msg.data.logs;
+            self.processLogs(msg)
+            self.processStateData(msg)
+        })
+        OctoPrint.socket.onMessage("history", (msg) => {
+            self.processLogs(msg)
+            self.processStateData(msg)
+        })
+    }
 
-            self.setState((state) => ({
-                logLines: state.logLines.concat(
-                    _.map(logs,function(line){return toInternalFormat(line)})
-                ).slice(state.autoscroll ? -300 : -1500)
-            }))
+    processLogs (msg){
+        let logs = msg.data.logs;
+
+        this.setState((state) =>({
+            logLines: state.logLines.concat(
+                _.map(logs, function(line){return toInternalFormat(line)})
+            ).slice(state.autoscroll ? -300 : -1500)
+        }))
+    }
+
+    processStateData (msg){
+        let flags = msg.data.state.flags;
+        console.log(flags);
+        this.setState({
+            printerState:{
+                isErrorOrClosed: flags.closedOrError,
+                isOperational: flags.operational,
+                isPrinting: flags.paused,
+                isPaused: flags.printing,
+                isError: flags.error,
+                isReady: flags.ready,
+                isLoading: flags.loading,
+            }
         })
     }
 
@@ -273,15 +355,16 @@ class TerminalTab extends React.Component {
                     autoscroll={this.state.autoscroll}
                     scrollHandler={this.handleScrollEvent}
                 />
-                <TerminalInput />
-                <small className={"pull-left"}>
-                    <Button
-                        className={'btn-small ' + (this.state.autoscroll ? 'active' : '')}
-                        onClick={this.toggleAutoScroll}
-                        text={this.state.autoscroll ? 'Autoscrolling' : 'Autoscroll'}
-                    />
-                    <Span text={"showing " + this.state.logLines.length + " lines"}/>
-                </small>
+                <TerminalInput
+                    printerState={this.state.printerState}
+                />
+                <TerminalStatus
+                    autoscroll={this.state.autoscroll}
+                    onToggleAutoScroll={this.toggleAutoScroll}
+                    logLinesLength={this.state.logLines.length}
+                    copyAll={this.copyAll}
+                    clearAll={this.clearAll}
+                />
             </div>
         )
     }
