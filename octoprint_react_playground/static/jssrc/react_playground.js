@@ -11,6 +11,12 @@ import ReactDOM from 'react-dom';
 const OctoPrint = window.OctoPrint;
 const $ = window.$; // I really wanted to avoid jquery, but this is needed for the tab listener since it is not mine.
 
+const ID_PREFIX = "terminal"  // For any components that need IDs, prefix them with this
+
+function prefixId (id){
+    return ID_PREFIX + "-" + id
+}
+
 function LinkBtn (props){
     return (
         <a className={"btn " + props.className} onClick={props.onClick}>
@@ -20,8 +26,13 @@ function LinkBtn (props){
 }
 
 function Button (props){
+    // This is probably not the best way of having a default prop, but hey it works
+    let disable = false
+    if (props.disable === true){
+        disable = true
+    }
     return (
-        <button className={"btn " + props.className} onClick={props.onClick}>
+        <button className={"btn " + props.className} onClick={props.onClick} disabled={disable}>
             {props.text}
         </button>
     )
@@ -262,6 +273,54 @@ class TerminalStatus extends React.Component {
     }
 }
 
+class AdvancedOptions extends React.Component {
+    constructor(props){
+        super(props)
+        this.state = {
+            open: false
+        }
+        this.toggleVisibility = this.toggleVisibility.bind(this)
+    }
+
+    toggleVisibility (){
+        this.setState((state) =>{
+            $('#terminal-advanced').collapse(state.open ? 'hide' : 'show')
+            return {open : !state.open}
+        })
+    }
+
+    render() {
+        return (
+            <div className={"row-fluid"}>
+                <div>
+                    <small>
+                        <a className={"muted"} onClick={this.toggleVisibility}>
+                            <i className={"fas fa-fw " + (this.state.open ? "fa-caret-down" : "fa-caret-right")}/> Advanced options
+                        </a>
+                    </small>
+                </div>
+                <div id={prefixId("advanced")} className={"collapse"} style={{display: "block"}}>
+                    <p className="row-fluid">
+                        <Button
+                            className="btn-primary btn-block"
+                            onClick={OctoPrint.connection.fakeAck}
+                            disable={!this.props.printerState.isOperational}
+                            text={"Fake Acknowledgement"}
+                        />
+                        <small className="muted">
+                            If acknowledgements ("ok"s) sent by the firmware get lost due to issues
+                            with the serial communication to your printer, OctoPrint's communication with it can become
+                            stuck. If that happens, this can help. Please be advised that such occurrences hint at
+                            general communication issues with your printer which will probably negatively influence your
+                            printing results and which you should therefore try to resolve!
+                        </small>
+                    </p>
+                </div>
+            </div>
+        )
+    }
+}
+
 class TerminalTab extends React.Component {
     constructor(props) {
         super(props);
@@ -349,23 +408,26 @@ class TerminalTab extends React.Component {
 
     render() {
         return (
-            <div className="terminal">
-                <TerminalLog
-                    logLines={this.state.logLines}
-                    autoscroll={this.state.autoscroll}
-                    scrollHandler={this.handleScrollEvent}
-                />
-                <TerminalInput
-                    printerState={this.state.printerState}
-                />
-                <TerminalStatus
-                    autoscroll={this.state.autoscroll}
-                    onToggleAutoScroll={this.toggleAutoScroll}
-                    logLinesLength={this.state.logLines.length}
-                    copyAll={this.copyAll}
-                    clearAll={this.clearAll}
-                />
-            </div>
+            <React.Fragment>
+                <div className="terminal">
+                    <TerminalLog
+                        logLines={this.state.logLines}
+                        autoscroll={this.state.autoscroll}
+                        scrollHandler={this.handleScrollEvent}
+                    />
+                    <TerminalInput
+                        printerState={this.state.printerState}
+                    />
+                    <TerminalStatus
+                        autoscroll={this.state.autoscroll}
+                        onToggleAutoScroll={this.toggleAutoScroll}
+                        logLinesLength={this.state.logLines.length}
+                        copyAll={this.copyAll}
+                        clearAll={this.clearAll}
+                    />
+                </div>
+                <AdvancedOptions printerState={this.state.printerState} />
+            </React.Fragment>
         )
     }
 }
